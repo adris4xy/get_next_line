@@ -1,0 +1,36 @@
+int	main(int argc, char **argv)
+{
+	int		i;
+	int		fd;
+	char	*line;
+	int		ret;
+	int		file;
+
+	if (argc != 3)
+	{
+		printf("%s", "You forgot the filename");
+		exit(1);
+	}
+	fd = open(argv[1], O_RDONLY);
+	file = open(argv[2], O_RDONLY);
+	i = 0;
+	while ((ret = get_next_line(fd, &line)) == 1)
+	{
+		printf("%3d %s\n", ++i, line);
+		free(line);
+		while ((ret = get_next_line(file, &line)) == 1)
+		{
+			printf("%3d %s\n", ++i, line);
+			free(line);
+		}
+	}
+	if (ret == -1)
+		printf("error\n");
+	else if (ret == 0)
+	{
+		printf("%s", line);
+		free(line);
+	}
+	close(fd);
+	return (0);
+}
