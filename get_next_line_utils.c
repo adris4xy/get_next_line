@@ -6,85 +6,94 @@
 /*   By: aortega- <aortega-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/11/20 17:09:45 by aortega-          #+#    #+#             */
-/*   Updated: 2019/11/22 16:39:32 by aortega-         ###   ########.fr       */
+/*   Updated: 2019/11/26 18:19:42 by aortega-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-char	*ft_strappend(char *dest, char *src)
-{
-	void	*copy;
-	int		dest_len;
-
-	dest_len = ft_strlen(dest);
-	if ((copy = (char*)malloc(sizeof(char) * (dest_len + 1))) == NULL)
-		return (NULL);
-	ft_strcpy(copy, dest);
-	free(dest);
-	dest = (char*)malloc(sizeof(char) * (dest_len + ft_strlen(src) + 1));
-	if (dest == NULL)
-		return (NULL);
-	ft_strcpy(dest, copy);
-	free(copy);
-	ft_strcpy(dest + dest_len, src);
-	return (dest);
-}
-
-char	*ft_strncpy(char *dest, const char *src, int n)
-{
-	int	i;
-
-	i = 0;
-	while (src[i] && i < n)
-	{
-		dest[i] = src[i];
-		i++;
-	}
-	while (i < n)
-		dest[i++] = '\0';
-	return (dest);
-}
-
-int		ft_strlen(char *str)
-{
-	int counter;
-
-	counter = 0;
-	while (str[counter])
-		counter++;
-	return (counter);
-}
-
-char	*ft_strcpy(char *dest, const char *src)
+size_t	ft_strlen(const char *str)
 {
 	int i;
 
 	i = 0;
-	while (src[i])
-	{
-		dest[i] = src[i];
+	while (str[i] != '\0')
 		i++;
-	}
-	dest[i] = '\0';
-	return (dest);
+	return (i);
 }
 
 char	*ft_strdup(const char *s)
 {
-	char	*clone;
-	size_t	i;
-	size_t	len;
+	int		i;
+	int		size;
+	char	*str;
 
-	len = ft_strlen((char*)s);
-	if ((clone = (char*)malloc(sizeof(char) * (len + 1))) == NULL)
-		return (NULL);
 	i = 0;
-	while (i < len)
+	size = ft_strlen(s);
+	str = (char*)malloc(sizeof(*str) * size + 1);
+	if (str == NULL)
+		return (NULL);
+	while (i < size)
 	{
-		clone[i] = s[i];
+		str[i] = s[i];
 		i++;
 	}
-	clone[i] = '\0';
-	return (clone);
+	str[size] = '\0';
+	return (str);
+}
+
+char	*ft_strjoin(char const *s1, char const *s2)
+{
+	char	*str;
+	int		i;
+
+	i = 0;
+	if (s1 && s2)
+	{
+		str = (char*)malloc((ft_strlen(s1) + ft_strlen(s2) + 1) * sizeof(char));
+		if (str == NULL)
+			return (NULL);
+		while (*s1)
+			str[i++] = *s1++;
+		while (*s2)
+			str[i++] = *s2++;
+		str[i] = '\0';
+		return (str);
+	}
+	return (0);
+}
+
+char	*ft_substr(char const *s, unsigned int start, size_t len)
+{
+	char			*str;
+	unsigned int	i;
+
+	i = 0;
+	if (s)
+	{
+		if (!(str = malloc(((int)len + 1) * sizeof(char))))
+			return (NULL);
+		ft_bzero(str, len);
+		if (start <= ft_strlen(s))
+		{
+			while (i < len && s[i])
+			{
+				str[i] = s[i + start];
+				i++;
+			}
+		}
+		if (i < len + 1)
+			str[i] = '\0';
+		return (str);
+	}
+	return (0);
+}
+
+void	ft_bzero(void *s, size_t n)
+{
+	unsigned char *ptr;
+
+	ptr = (unsigned char*)s;
+	while (n-- > 0)
+		*(ptr++) = 0;
 }

@@ -5,91 +5,142 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: aortega- <aortega-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2019/11/20 16:09:48 by aortega-          #+#    #+#             */
-/*   Updated: 2019/11/22 17:35:33 by aortega-         ###   ########.fr       */
+/*   Created: 2019/11/26 16:21:03 by aortega-          #+#    #+#             */
+/*   Updated: 2019/11/26 18:19:44 by aortega-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-int		get_next_line(int fd, char **line)
+static char			*ft_strchr(const char *s, int c)
 {
-	int			split_at;
-	static char	rest[4096][BUFFER_SIZE + 1] = {{0}};
-
-	if (fd < 0 || fd > 4096 || line == NULL || BUFFER_SIZE <= 0)
-		return (-1);
-	if ((*line = ft_strdup("")) == NULL)
-		return (-1);
-	if (rest[fd][0] == '\0')
-		return (read_line(fd, line, rest[fd]));
-	if (HAS_NEWLINE(rest[fd], split_at))
+	if (s == NULL)
+		return (NULL);
+	while (*s)
 	{
-		free(*line);
-		if ((*line = (char*)malloc(sizeof(char) * (split_at + 1))) == NULL)
-			return (-1);
-		ft_strncpy(*line, rest[fd], split_at);
-		(*line)[split_at] = '\0';
-		ft_strcpy(rest[fd], rest[fd] + split_at + 1);
-		return (1);
+		if (*s == (unsigned char)c)
+			return ((char *)s);
+		s++;
 	}
-	free(*line);
-	if (!(*line = (char*)malloc(sizeof(char) * (ft_strlen(rest[fd]) + 1))))
-		return (-1);
-	ft_strcpy(*line, rest[fd]);
-	rest[fd][0] = '\0';
-	return (read_line(fd, line, rest[fd]));
+	if (*s == (unsigned char)c)
+		return ((char *)s);
+	return (NULL);
 }
 
-int		read_line(int fd, char **line, char *rest)
+static void			ft_strdel(char **str)
 {
-	int		ret;
-	int		split_at;
-	char	*buf;
-
-	if ((buf = malloc(sizeof(char) * (BUFFER_SIZE + 1))) == NULL)
-		return (free_return(line, NULL, -1));
-	while ((ret = read(fd, buf, BUFFER_SIZE)) > 0)
+	if (str != NULL && *str != NULL)
 	{
-		buf[ret] = '\0';
-		if (HAS_NEWLINE(buf, split_at))
+		free(*str);
+		*str = NULL;
+	}
+}
+
+int					ft_putline(int fd, char **s, char **line)
+{
+	int		size;
+	char	*tmp;
+
+	size = 0;
+	while (s[fd][size] != '\n')
+		size++;
+	if (!(*line = malloc(sizeof(char) * size + 1)))
+		return (-1);
+	*line = ft_substr(s[fd], 0, size);
+	tmp = ft_strdup(&s[fd][size + 1]);
+	free(s[fd]);
+	s[fd] = tmp;
+	return (1);
+}
+
+int					output(int ret, int fd, char **s, char **line)
+{
+	if (ret < 0)
+		return (-1);
+	else if (ret == 0 && (s[fd] == NULL || s[fd][0] == '\0'))
+	{
+		*line = ft_strdup("");
+		ft_strdel(&s[fd]);
+		return (0);
+	}
+	else if (ft_strchr(s[fd], '\n'))
+		return (ft_putline(fd, s, line));
+	else
+	{
+		*line = ft_strdup(s[fd]);
+		ft_strdel(&s[fd]);
+		return (0);
+	}
+}
+
+int					get_next_line(int fd, char **line)
+{
+	int				ret;
+	static char		*s[4096];
+	char			*buff;
+	char			*tmp;
+
+	if (fd < 0 || BUFFER_SIZE <= 0 || line == NULL)
+		return (-1);
+	if (!(buff = (char*)malloc(sizeof(char) * BUFFER_SIZE + 1)))
+		return (-1);
+	while ((ret = read(fd, buff, BUFFER_SIZE)) > 0)
+	{
+		buff[ret] = '\0';
+		if (s[fd] == NULL)
+			s[fd] = ft_strdup(buff);
+		else
 		{
-			ft_strcpy(rest, buf + split_at + 1);
-			buf[split_at] = '\0';
-			if ((*line = ft_strappend(*line, buf)) == NULL)
-				return (free_return(&buf, NULL, -1));
-			return (free_return(&buf, NULL, 1));
+			tmp = ft_strjoin(s[fd], buff);
+			free(s[fd]);
+			s[fd] = tmp;
 		}
-		if ((*line = ft_strappend(*line, buf)) == NULL)
-			return (free_return(&buf, NULL, -1));
+		if (ft_strchr(s[fd], '\n'))
+			break ;
 	}
-	if (ret == -1)
-		return (free_return(&buf, line, -1));
-	return (free_return(&buf, NULL, ret));
+	free(buff);
+	return (output(ret, fd, s, line));
 }
 
-int		find_newline(char *str)
+int main(int argc, char **argv)
 {
-	int i;
+	int fd;
+	int ret;
+	int line;
+	char *buff;
+	int 	i;
 
-	i = -1;
-	while (str[++i])
-		if (str[i] == '\n')
-			return (i);
-	return (-1);
-}
-
-int		free_return(char **ptr, char **ptr2, int ret)
-{
-	if (ptr != NULL)
+	line = 0;
+	if (argc > 1)
 	{
-		free(*ptr);
-		*ptr = NULL;
+		i = 0;
+		while (++i < argc)
+		{
+			fd = open(argv[i], O_RDONLY);
+			printf("%d- archivo: %s\n",i, argv[i]);
+			while ((ret = get_next_line(fd, &buff)) > 0)
+			{
+				printf("[Return: %d] Line #%d: %s\n", ret, ++line, buff);
+				free(buff);
+			}
+			printf("[Return: %d] Line #%d: %s\n", ret, ++line, buff);
+			if (ret == -1)
+				printf("-----------\nError\n");
+			else if (ret == 0)
+				printf("-----------\nEnd of file\n");
+			free(buff);
+		}
 	}
-	if (ptr2 != NULL)
+	if (argc == 1)
 	{
-		free(*ptr2);
-		*ptr2 = NULL;
+		while ((ret = get_next_line(0, &buff)) > 0)
+			printf("[Return: %d] Line #%d: %s\n", ret, ++line, buff);
+		if (ret == -1)
+			printf("-----------\nError\n");
+		else if (ret == 0)
+			printf("-----------\nEnd of stdin\n");
+		free(buff);
+		close(fd);
 	}
-	return (ret);
+	return (0);
 }
